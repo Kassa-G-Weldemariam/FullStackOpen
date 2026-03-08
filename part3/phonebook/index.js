@@ -1,35 +1,9 @@
 const express = require("express");
 const morgan = require("morgan");
+require("dotenv").config();
+const Person = require("./modules/persons");
 
 const app = express();
-
-const persons = [
-  {
-    id: "1",
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: "2",
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: "3",
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: "4",
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-  {
-    id: "5",
-    name: "kebede",
-    number: 4034383938,
-  },
-];
 
 app.use(express.json());
 app.use(morgan("tiny"));
@@ -39,68 +13,89 @@ app.use(
 );
 app.use(express.static("dist"));
 
-app.get("/api/persons", (req, res) => {
-  res.json(persons);
+app.get("/api/persons", (req, res, next) => {
+  Person.find({})
+    .then((person) => {
+      res.json(person);
+    })
+    .catch((error) => next(error));
 });
 
-app.get("/api/info", (req, res) => {
+app.get("/api/info", (req, res, next) => {
   const date = new Date().toString();
-  res.send(
-    `<p>Phonebook has info for ${persons.length} people</p> <br/> ${date}`,
-  );
+  Person.find({})
+    .then((persons) => {
+      res.send(
+        `<p>Phonebook has info for ${persons.length} people</p> <br/> ${date}`,
+      );
+    })
+    .catch((error) => next(error));
 });
 
-app.get("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  const person = persons.find((p) => p.id === id);
-  if (!person) {
-    return res.status(404).json({
-      error: "person not found",
-    });
+app.get("/api/persons/:id", (req, res, next) => {
+  Person.findById(req.params.id)
+    .then((person) => {
+      res.json(person);
+    })
+    .catch((error) => next(error));
+});
+
+app.delete("/api/persons/:id", (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then((result) => {
+      res.status(204).end();
+    })
+    .catch((error) => next(error));
+});
+
+app.post("/api/persons", async (req, res, next) => {
+  const { name, number } = req.body;
+  if (!name || !number) {
+    return res.status(400).send({ error: "please provide name and number" });
   }
-  res.json(person);
-});
-
-app.delete("/api/persons/:id", (req, res) => {
-  const id = req.params.id;
-  const person = persons.find((p) => p.id === id);
-  if (!person) {
-    return res.status(404).json({
-      error: "person not found",
+  try {
+    const existingPerson = await Person.findOne({ name: name });
+    if (existingPerson) {
+      return res.status(400).send({ error: "name must be unique" });
+    }
+    const person = new Person({
+      name: name,
+      number: number,
     });
+    const savedPerson = await person.save();
+    res.json(savedPerson);
+  } catch (error) {
+    next(error);
   }
-  res.status(204).end();
 });
-
-const generatedId = () => {
-  const id = Math.floor(Math.random() * 100);
-  return String(id);
+app.put("/api/persons/:id", (req, res, next) => {
+  const { name, number } = req.body;
+  Person.findById(req.params.id)
+    .then((person) => {
+      if (!person) {
+        res.status(404).end();
+      }
+      person.name = name;
+      person.number = number;
+      return person.save().then((updatedPerson) => {
+        res.json(updatedPerson);
+      });
+    })
+    .catch((error) => next(error));
+});
+const errorHandler = (error, req, res, next) => {
+  console.log(error.message);
+  if (error.name === "CastError") {
+    return res.status(400).send({ error: "malformed id" });
+  } else if (error.name === "ValidationError") {
+    return res.status(400).json({ error: error.message });
+  }
+  next(error);
 };
 
-app.post("/api/persons", (req, res) => {
-  const { name, number } = req.body;
+app.use(errorHandler);
 
-  const id = generatedId();
-  if (persons.find((p) => p.id === id)) {
-    return res
-      .status(400)
-      .json({ error: "id is already used, try another hit" });
-  }
-  if (!name || !number) {
-    return res.status(400).json({ error: "please provide name and number" });
-  }
-  if (persons.find((n) => n.name === name)) {
-    return res.status(400).json({ error: "name must be unique" });
-  }
-  const person = {
-    id: id,
-    name: name,
-    number: number,
-  };
-  res.json(persons.concat(person));
-});
-
-const port = 3001;
+const port = process.env.PORT;
 app.listen(port, () => {
   console.log("server running on port", port);
 });
