@@ -25,27 +25,47 @@ function App() {
       name: newName,
       number: newNumber,
     };
-    services.create(obPerson).then((data) => {
-      setPerson(person.concat(data));
-      setNewName("");
-      setNewNumber("");
-      setSuccessMessage(`Added ${newName}`);
-      setTimeout(() => {
-        setSuccessMessage("");
-      }, 5000);
-    });
+    services
+      .create(obPerson)
+      .then((data) => {
+        setPerson(person.concat(data));
+        setNewName("");
+        setNewNumber("");
+        setSuccessMessage(`Added ${newName}`);
+        setTimeout(() => {
+          setSuccessMessage("");
+        }, 5000);
+      })
+      .catch((error) => {
+         console.log(error.response.data.error);
+        const backendError = error.response?.data?.error || "An error occurred";
+        setErrorMessage(backendError);
+        setTimeout(() => {
+          setErrorMessage("");
+        }, 5000);
+      });
   };
   const handleDeletion = (id) => {
-    const targeted = person.find((onePer) => onePer.id === id);
+    const targeted = person.find((onePer) => onePer?.id === id);
     if (confirm(`Delete ${targeted.name} ?`)) {
-      services.clear(id).then(() => {
-        setPerson(person.filter((each) => each.id !== id));
-      });
+      services
+        .clear(id)
+        .then(() => {
+          setPerson(person.filter((each) => each?.id !== id));
+        })
+        .catch((error) => {
+          const backendError =
+            error.response?.data?.error || "An error occurred";
+          setErrorMessage(backendError);
+          setTimeout(() => {
+            setErrorMessage("");
+          }, 5000);
+        });
     }
   };
 
   const isPresent = person.find(
-    (each) => each.name.toLowerCase() === newName.toLowerCase(),
+    (each) => each?.name?.toLowerCase() === newName?.trim().toLowerCase(),
   );
 
   const updatePhone = () => {
@@ -88,7 +108,7 @@ function App() {
   };
 
   const matched = person.filter((each) =>
-    each.name.toLowerCase().includes(search.toLowerCase()),
+    each.name?.toLowerCase().includes(search?.toLowerCase()),
   );
 
   const handleNewName = (e) => {
