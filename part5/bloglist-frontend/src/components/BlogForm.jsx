@@ -1,29 +1,45 @@
-import React from "react";
+import React, { useState } from 'react'
 
-const BlogForm = (props) => {
+const BlogForm = ({ createBlog }) => {
+  const [title, setTitle] = useState('')
+  const [author, setAuthor] = useState('')
+  const [url, setUrl] = useState('')
+
+  const handleBlog = (e) => {
+    e.preventDefault()
+    createBlog({
+      title,
+      author,
+      url,
+    })
+    setTitle('')
+    setAuthor('')
+    setUrl('')
+  }
+
   return (
     <div>
       <h1>create new note</h1>
-      <form onSubmit={props.onSubmit}>
+      <form onSubmit={handleBlog}>
         <div>
           <label>
-            {" "}
+            {' '}
             title:
             <input
               type="text"
-              value={props.title}
-              onChange={(e) => props.setTitle(e.target.value)}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
             />
           </label>
         </div>
         <div>
           <label>
-            {" "}
+            {' '}
             author:
             <input
               type="text"
-              value={props.author}
-              onChange={(e) => props.setAuthor(e.target.value)}
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
             />
           </label>
         </div>
@@ -32,15 +48,15 @@ const BlogForm = (props) => {
             url:
             <input
               type="text"
-              value={props.url}
-              onChange={(e) => props.setUrl(e.target.value)}
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
             />
           </label>
         </div>
         <button>create</button>
       </form>
     </div>
-  );
-};
+  )
+}
 
-export default BlogForm;
+export default BlogForm
