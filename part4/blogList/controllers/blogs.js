@@ -56,9 +56,10 @@ blogRoute.put("/:id", async (req, res) => {
   if (!blog) {
     return res.status(404).end();
   }
-  blog.likes = blog.likes + (body.likes || 0);
+  blog.likes = body.likes;
 
   const updatedBlog = await blog.save();
+  await updatedBlog.populate('user',{name:1})
   res.json(updatedBlog);
 });
 
